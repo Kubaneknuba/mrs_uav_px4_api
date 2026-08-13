@@ -302,6 +302,7 @@ void MrsUavPx4Api::initialize(const rclcpp::Node::SharedPtr &node, std::shared_p
   local_param_loader.loadParam("input_mode/control_group", (bool &)_capabilities_.accepts_control_group_cmd);
   local_param_loader.loadParam("input_mode/attitude_rate", (bool &)_capabilities_.accepts_attitude_rate_cmd);
   local_param_loader.loadParam("input_mode/attitude", (bool &)_capabilities_.accepts_attitude_cmd);
+  local_param_loader.loadParam("input_mode/actuator", (bool &)_capabilities_.accepts_actuator_cmd);
 
   local_param_loader.loadParam("outputs/distance_sensor", (bool &)_capabilities_.produces_distance_sensor);
   local_param_loader.loadParam("outputs/gnss", (bool &)_capabilities_.produces_gnss);
@@ -473,7 +474,27 @@ bool MrsUavPx4Api::callbackActuatorCmd([[maybe_unused]] const mrs_msgs::msg::HwA
 
   RCLCPP_INFO_ONCE(node_->get_logger(), "getting actuator cmd");
 
-  return false;
+  if (!_capabilities_.accepts_actuator_cmd) {
+    RCLCPP_ERROR(node_->get_logger(), "the actuator input is not enabled in the config file");
+    return false;
+  }
+
+  mavros_msgs::msg::ActuatorControl msg_out;
+  msg_out.header.frame_id = "base_link";
+  msg_out.header.stamp    = msg->stamp;
+
+  // clear all outputs first
+  for (size_t i = 0; i < msg_out.controls.size(); ++i) {
+    msg_out.controls[i] = 0.0;
+  }
+
+  // map the vector to raw PX4 channels
+  for (size_t i = 0; i < msg->motors.size() && i < msg_out.controls.size(); ++i) {
+    msg_out.controls[i] = msg->motors[i];
+  }
+
+  ph_mavros_actuator_control_.publish(msg_out);
+  return true;
 }
 
 //}

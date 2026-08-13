@@ -11,9 +11,10 @@ plugin:
     amsl: 340.0
   
   input_mode:
+    actuator:     true
     control_group: false
-    attitude_rate: true
-    attitude:      true
+    attitude_rate: false #true
+    attitude:      false #true
   
   outputs:
     distance_sensor:      true
