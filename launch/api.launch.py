@@ -114,27 +114,28 @@ def generate_launch_description():
                 ],
 
                 remappings=[
+                    ('~/ground_truth_in', 'ground_truth' if simulation else 'rtk/bestpos'),
+                    ('~/mavros_state_in', 'mavros/state'),
+                    ('~/mavros_local_position_in', 'mavros/local_position/odom'),
 
-                  ('~/ground_truth_in', 'ground_truth' if simulation else 'rtk/bestpos'),
-                  ('~/mavros_state_in', 'mavros/state'),
-                  ('~/mavros_local_position_in', 'mavros/local_position/odom'),
-                  ('~/mavros_odometry_in', mavros_odometry_in_topic),
-                  ('~/mavros_global_position_in', 'mavros/global_position/global'),
-                  ('~/mavros_garmin_in', 'mavros/garmin'),
-                  ('~/mavros_imu_in', 'mavros/imu/data'),
-                  ('~/mavros_magnetometer_in', 'mavros/global_position/compass_hdg'),
-                  ('~/mavros_magnetic_field_in', 'mavros/imu/mag'),
-                  ('~/mavros_rc_in', 'mavros/rc/in'),
-                  ('~/mavros_altitude_in', 'mavros/altitude'),
-                  ('~/mavros_battery_in', 'mavros/battery'),
-                  ('~/mavros_gps_status_raw_in', 'mavros/gpsstatus/gps1/raw'),
+                    # CHANGE THIS LINE: point to MAVROS's actual odometry topic
+                    ('~/mavros_odometry_in', 'mavros/local_position/odom'),
 
-                  ('~/mavros_cmd_out', 'mavros/cmd/command'),
-                  ('~/mavros_set_mode_out', 'mavros/set_mode'),
-                  ('~/mavros_attitude_setpoint_out', 'mavros/setpoint_raw/attitude'),
-                  ('~/mavros_actuator_control_out', 'mavros/actuator_control'),
-                  ('~/errors', 'errors'),
+                    ('~/mavros_global_position_in', 'mavros/global_position/global'),
+                    ('~/mavros_garmin_in', 'mavros/garmin'),
+                    ('~/mavros_imu_in', 'mavros/imu/data'),
+                    ('~/mavros_magnetometer_in', 'mavros/global_position/compass_hdg'),
+                    ('~/mavros_magnetic_field_in', 'mavros/imu/mag'),
+                    ('~/mavros_rc_in', 'mavros/rc/in'),
+                    ('~/mavros_altitude_in', 'mavros/altitude'),
+                    ('~/mavros_battery_in', 'mavros/battery'),
+                    ('~/mavros_gps_status_raw_in', 'mavros/gpsstatus/gps1/raw'),
 
+                    ('~/mavros_cmd_out', 'mavros/cmd/command'),
+                    ('~/mavros_set_mode_out', 'mavros/set_mode'),
+                    ('~/mavros_attitude_setpoint_out', 'mavros/setpoint_raw/attitude'),
+                    ('~/mavros_actuator_control_out', 'mavros/actuator_control'),
+                    ('~/errors', 'errors'),
                 ],
             )
 

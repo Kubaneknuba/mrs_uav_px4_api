@@ -6,9 +6,8 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
-from launch.conditions import IfCondition
-from launch_ros.parameter_descriptions import ParameterFile
 from launch.substitutions import LaunchConfiguration
+from launch_ros.parameter_descriptions import ParameterFile
 
 
 def generate_launch_description():
@@ -17,16 +16,30 @@ def generate_launch_description():
 
     OLD_PX4_FW = os.getenv("OLD_PX4_FW", "false") == "true"
     PX4_IP = os.getenv("PX4_IP", "")
+    USE_SIM_TIME = os.getenv("USE_SIM_TIME", "false") == "true"
+    UAV_NAME = os.getenv("UAV_NAME", "uav1")
 
-    if PX4_IP:
-        default_fcu_url = f"udp://:14550@{PX4_IP}:14550"
+    # Extract UAV ID number (e.g., uav1 -> 1, uav2 -> 2)
+    try:
+        uav_id = int("".join(filter(str.isdigit, UAV_NAME)))
+    except ValueError:
+        uav_id = 1
+
+    # Calculate MAVROS ports for simulation:
+    # uav1: local_bind = 14006, target_px4 = 14005
+    # uav2: local_bind = 14008, target_px4 = 14007
+    mavros_local_port = 14006 + (uav_id - 1) * 2
+    px4_target_port = 14005 + (uav_id - 1) * 2
+
+    if USE_SIM_TIME or PX4_IP != "":
+        target_ip = PX4_IP if PX4_IP else "127.0.0.1"
+        default_fcu_url = f"udp://:{mavros_local_port}@{target_ip}:{px4_target_port}"
     else:
         rate = 921600 if OLD_PX4_FW else 2000000
         default_fcu_url = f"/dev/pixhawk:{rate}"
 
     default_garmin_id = "33" if OLD_PX4_FW else "0"
     default_garmin_orientation = "0" if OLD_PX4_FW else "PITCH_270"
-
 
     uav_name = LaunchConfiguration("uav_name")
     fcu_url = LaunchConfiguration("fcu_url")
@@ -39,7 +52,7 @@ def generate_launch_description():
     launch_arguments = [
         DeclareLaunchArgument(
             "uav_name",
-            default_value=os.getenv("UAV_NAME", "uav1"),
+            default_value=UAV_NAME,
         ),
         DeclareLaunchArgument(
             "fcu_url",
@@ -64,16 +77,16 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "garmin_id",
             default_value=default_garmin_id,
-            description="Distance sensor ID reported by MAVROS for the Garmin, firmware-dependent",
+            description="Distance sensor ID reported by MAVROS for the Garmin",
         ),
         DeclareLaunchArgument(
             "garmin_orientation",
             default_value=default_garmin_orientation,
-            description="Garmin sensor orientation enum used by MAVROS, firmware-dependent",
+            description="Garmin sensor orientation enum used by MAVROS",
         ),
         DeclareLaunchArgument(
             "tgt_system",
-            default_value="1",
+            default_value=str(uav_id),
             description="Target system ID for MAVROS",
         ),
         DeclareLaunchArgument(
@@ -108,9 +121,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription(
-        launch_arguments
-        + [
-            mavros_node
-        ]
-    )
+    return LaunchDescription(launch_arguments + [mavros_node])

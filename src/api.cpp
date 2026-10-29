@@ -206,6 +206,8 @@ private:
   mrs_lib::PublisherHandler<mavros_msgs::msg::AttitudeTarget>  ph_mavros_attitude_target_;
   mrs_lib::PublisherHandler<mavros_msgs::msg::ActuatorControl> ph_mavros_actuator_control_;
 
+
+
   // | ------------------------- timers ------------------------- |
 
   std::shared_ptr<TimerType> timer_main_;
@@ -243,6 +245,10 @@ private:
     subscriber_handler = SubscriberHandler_T(options, topic, timeout_callback, message_callback);
   }
 };
+
+std::array<double, 8> actuator_controls_ = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+std::int32_t actuator_controls_counter_ = 0;
+rclcpp::TimerBase::SharedPtr timer_actuators_;
 
 //}
 
@@ -472,30 +478,32 @@ mrs_msgs::msg::HwApiCapabilities MrsUavPx4Api::getCapabilities() {
 
 bool MrsUavPx4Api::callbackActuatorCmd([[maybe_unused]] const mrs_msgs::msg::HwApiActuatorCmd::ConstSharedPtr msg) {
 
-  RCLCPP_INFO_ONCE(node_->get_logger(), "getting actuator cmd");
-
   if (!_capabilities_.accepts_actuator_cmd) {
-    RCLCPP_ERROR(node_->get_logger(), "the actuator input is not enabled in the config file");
+    RCLCPP_ERROR(node_->get_logger(), "Actuator input is not enabled in the config file");
     return false;
   }
 
-  mavros_msgs::msg::ActuatorControl msg_out;
-  msg_out.header.frame_id = "base_link";
-  msg_out.header.stamp    = msg->stamp;
+  auto request = std::make_shared<mavros_msgs::srv::CommandLong::Request>();
+  request->command = 187;
+  request->param1 = msg->motors[0];
+  request->param2 = msg->motors[1];
+  request->param3 = msg->motors[2];
+  request->param4 = msg->motors[3];
+  request->param5 = msg->motors[4];
+  request->param6 = msg->motors[5];
+  request->param7 = 0.0;
 
-  // clear all outputs first
-  for (size_t i = 0; i < msg_out.controls.size(); ++i) {
-    msg_out.controls[i] = 0.0;
+  RCLCPP_INFO(node_->get_logger(), "Sending actuator command: [%f, %f, %f, %f, %f, %f]", msg->motors[0], msg->motors[1], msg->motors[2], msg->motors[3], msg->motors[4], msg->motors[5]);
+
+  if (sch_mavros_command_long_.isServiceReady()) {
+    sch_mavros_command_long_.callAsync(request);
+  } else {
+    RCLCPP_WARN_THROTTLE(node_->get_logger(), *node_->get_clock(), 1000, "MAVROS command service is not ready!");
   }
 
-  // map the vector to raw PX4 channels
-  for (size_t i = 0; i < msg->motors.size() && i < msg_out.controls.size(); ++i) {
-    msg_out.controls[i] = msg->motors[i];
-  }
-
-  ph_mavros_actuator_control_.publish(msg_out);
   return true;
 }
+
 
 //}
 
@@ -658,13 +666,14 @@ std::tuple<bool, std::string> MrsUavPx4Api::callbackArming([[maybe_unused]] cons
   auto srv_out = std::make_shared<mavros_msgs::srv::CommandLong::Request>();
 
   // when REALWORLD AND ARM:=TRUE
+  /*
   if (!_simulation_ && request) {
 
     ss << "can not arm by service when not in simulation! You should arm the drone by the RC controller only!";
     RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *clock_, 1000, "" << ss.str());
 
     return {false, ss.str()};
-  }
+  }*/
 
   srv_out->broadcast    = false;
   srv_out->command      = 400; // the code for arming

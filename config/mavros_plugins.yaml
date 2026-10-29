@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    # plugin_denylist:
+    #plugin_denylist:
       
       # # common
       # - 3dr_radio
@@ -42,7 +42,7 @@
       # - companion_process_status
       # - wheel_odometry
       # - trajectory
-      # # - odom
+      # - odometry
       # - adsb
       # # - debug_value
       # - wind_estimation
@@ -61,7 +61,7 @@
 
     plugin_allowlist:
       # core
-      # - actuator_control
+      - actuator_control
       - altitude
       - attitude
       - command
@@ -86,4 +86,4 @@
       - gps_rtk
       - gps_status
       - mag_calibration_status
-      - odometry
+      # - odometry
